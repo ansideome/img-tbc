@@ -24,12 +24,10 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    return res
-      .status(201)
-      .json({
-        message: "User registered successfully",
-        user: { id: user.id, email: user.email },
-      });
+    return res.status(201).json({
+      message: "User registered successfully",
+      user: { id: user.id, email: user.email },
+    });
   } catch (err) {
     return res.status(500).json({ message: "Error registering user" });
   }
@@ -49,7 +47,10 @@ export const login = async (req: Request, res: Response) => {
       expiresIn: "1d",
     });
 
-    return res.json({ token });
+    return res.json({
+      token,
+      user: { id: user.id, email: user.email, role: user.role },
+    });
   } catch (err) {
     return res.status(500).json({ message: "Login error" });
   }
