@@ -55,32 +55,40 @@ export const deletePhoto = async (req: AuthRequest, res: Response) => {
 
 export const getAllUserPhotos = async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
-  const take = 10;
-  const skip = (page - 1) * take;
+  const limit = 10;
+  const offset = (page - 1) * limit;
 
-  const photos = await prisma.photo.findMany({
-    skip,
-    take,
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-    },
+  const totalUsers = await prisma.user.count();
+  const users = await prisma.user.findMany({
+    skip: offset,
+    take: limit,
   });
 
-  const total = await prisma.photo.count();
+  const photosByUser = await Promise.all(
+    users.map(async (user) => {
+      const photos = await prisma.photo.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 7,
+      });
+
+      return {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+        photos,
+      };
+    })
+  );
 
   return res.json({
-    photos,
+    data: photosByUser,
     pagination: {
-      total,
+      total: totalUsers,
       page,
-      lastPage: Math.ceil(total / take),
+      lastPage: Math.ceil(totalUsers / limit),
     },
   });
 };
