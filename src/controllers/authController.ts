@@ -6,7 +6,7 @@ import prisma from "../config/prisma";
 const JWT_SECRET = process.env.JWT_SECRET || "defaultsecret";
 
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -15,12 +15,17 @@ export const register = async (req: Request, res: Response) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
+    const normalizedRole = (role || "USER").toUpperCase();
+    if (normalizedRole !== "ADMIN" && normalizedRole !== "USER") {
+      return res.status(400).json({ message: "Invalid role. Only ADMIN or USER are allowed." });
+    }
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashed,
-        role: "USER",
+        role: normalizedRole,
       },
     });
 
@@ -32,6 +37,7 @@ export const register = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error registering user" });
   }
 };
+
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
